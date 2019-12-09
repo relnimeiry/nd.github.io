@@ -1,0 +1,15 @@
+out_dir: "."
+navbar:
+    title: "ND Projects"
+    left:
+      - text: "Home"
+        href: index.hmtl
+      - text: "Projects"
+        href: projects.hmtl
+      - text: "About"
+        href: about.html
+    right:
+      - text: "Contact"
+        href: contact.hmtl
+        
+        

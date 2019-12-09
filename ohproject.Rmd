@@ -1,0 +1,277 @@
+---
+title: "Oral Health Project"
+author: "Rasha Elnimeiry"
+date: "December 2019"
+output:
+    flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+---
+
+
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(leaflet)
+library(tidyverse)
+library(ggplot2)
+library(rgdal)
+library("raster")
+library("sp")
+library("GISTools")
+library("raster")
+library("sp")
+library("GISTools")
+library(tidyverse)
+library(sf)
+library(units)
+library(tmap)
+
+setwd("/Users/rashaelnimeiry/Desktop/Meetings ND/ND county DD NDGISHubData")
+# cnty<-readOGR("NDHUB.COUNTIES_polygon.shp")
+setwd("/Users/rashaelnimeiry/Desktop/Meetings ND")
+cnty<-readOGR("cntyshpschlsUnique.shp")
+#has counts of dental offices and schools dental sealant prog counts
+daddn<-read.csv("daddn.csv")
+daddn<-subset(daddn,  officestate=="ND")
+allschools<-read.csv("geoallschools.csv")
+
+# 
+# cntyna <- c("Burke"	, "Billings"	,"Bowman"	,"Ward"	,"Rolette"	,"Mountrail"	,"Richland"	,"Towner"	,
+#             "Ramsey"	,"Stutsman"	,"Oliver"	,"Sioux"	,"Adams"	,"Steele"	,"Barnes"	,"Hettinger"	,
+#             "Ransom"	,"Pembina"	,"Dickey"	,"Wells"	,"Benson"	,"Grand Forks"	,"McIntosh"	,
+#             "Logan"	,"Renville"	,"Pierce"	,"Foster"	,"Grant"	,"Golden Valley"	,"Divide"	,"Stark"	,
+#             "Nelson"	,"Sargent"	,"LaMoure"	,"Bottineau"	,"Cavalier"	,"Sheridan"	,"McHenry"	,
+#             "Traill"	,"Eddy"	,"Emmons"	,"Dunn"	,"Walsh"	,"Kidder"	,"Cass"	,"Mercer"	,"McLean"	,
+#             "McKenzie"	,"Burleigh"	,"Morton"	,"Slope"	,"Williams"	,"Griggs"	)
+# cnty@data<-cbind(cntyna, cnty@data)
+
+icon<- makeIcon(
+  iconUrl = "https://cdn2.iconfinder.com/data/icons/human-body-parts/614/5008_-_Tooth-512.png",
+  iconWidth = 22, iconHeight = 21,
+  iconAnchorX = 0, iconAnchorY = 0)
+
+
+pal<- colorNumeric(palette = c("#087482", "#796e66", "#faa21b", "#d34727", "#a8353a"), domain = cnty@data$POP2010, na.color="transparent")
+
+mytext<-paste(
+  "<b>","County Name: ","</b>", cnty@data$cntyna,"<br/>",
+  "<b>","Population: ","</b>", round(cnty@data$POP2010, 2), 
+  sep = "") %>% 
+  lapply(htmltools::HTML)
+
+
+org <- "#d34727"
+dgrey <- "#796e66"
+lgrey <- "#b6b0a2"
+turq <- "#087482"
+blk <- "#000000"
+burg <- "#a8353a"
+byell <- "#faa21b"
+bblue <- "#049fda"
+dgrn <- "#709749"
+lgrn <- "#b3bd35"
+
+```
+Dental Offices
+=====================================
+Column {data-width=650}
+-----------------------------------------------------------------------
+
+### North Dakota Dental Office Locations
+
+```{r}
+
+
+leaflet(cnty) %>%
+  setView(lng= -100.400, lat=47.6715, zoom=7.5) %>% 
+   addPolygons(data=cnty, color= dgrey,  weight = 2, fillColor = org, fillOpacity = .1, opacity = .30, 
+               highlightOptions = highlightOptions(color = turq, weight = 3.5, opacity = .6,
+                 bringToFront = F), 
+               label = mytext,
+               labelOptions = labelOptions( 
+                 style = list("font-weight" = "normal", padding = "3px 8px"), 
+                 textsize = "13px", 
+                 direction = "auto" )) %>%
+  addProviderTiles(providers$CartoDB.Positron) %>%
+  addMarkers( icon= icon,
+    lng = daddn$lon,
+    lat = daddn$lat,
+    popup = paste("<b>", "Office Name: ","</b>", daddn$officename , "<br>" ,
+                  "<b>", "Specialty: ", "</b>", daddn$specialtyada, "<br>",
+                  "<b>", "Practicing Status: ", "</b>", daddn$Practicing,  "<br>",
+                  "<b>", "Licensure: ", "</b>", daddn$license), 
+    group="Dental Office Locations")      %>%     
+
+addPolygons( data=cnty ,
+             fillColor = ~pal(cnty@data$POP2010),
+             weight=0.9,
+             stroke=TRUE, 
+             color=dgrey,
+             fillOpacity = 0.5, 
+             label = mytext,
+             labelOptions = labelOptions( 
+               style = list("font-weight" = "normal", padding = "3px 8px"), 
+               textsize = "13px", 
+               direction = "auto" ),
+             highlightOptions = highlightOptions(color = "white", weight = 4.5, opacity = .6,
+                                                 bringToFront = T),
+
+  group="Population 2010")    %>% 
+  
+  addLegend("topright", 
+            pal = pal,
+            values=cnty@data$POP2010,
+            labels = ~pal, 
+            title="North Dakota Population 2010",
+            opacity = .5,
+  group="Legend") %>% 
+
+addLayersControl(overlayGroups = c( "Dental Office Locations", "Population 2010", "Legend")) 
+
+```
+
+Column {data-width=150}
+-----------------------------------------------------------------------
+
+### County Population
+
+```{r}
+DT::datatable(cnty@data[, c("NAME", "cntdntf", "POP2010", "POP10_S") ],
+  rownames = F, colnames= c("County" ,"Dental Offices per County", "Population", "Population per Sq. mi."), options = list(pageLength = 53)
+)
+```
+
+### Notes
+
+```{r}
+"Dental Office Locations in North Dakota"
+```
+
+<b>How to Use:</b> 
+</br>
+</br>* Click on the "layers" icon to toggle on/off different layers on the chloropleth map. 
+</br>
+</br>* Click the "tooth" icon to display more information about the dental office at that location.
+</br>
+</br>* Zoom in and out using "+" or "-" at the top left of map, or pressing and holding the "CNTRL" key and scrolling the wheel on your mouse up or down.
+</br>
+</br><b>Data Sources:</b> 
+</br>
+</br>* Population counts are per U.S. Census, 2010.
+</br>
+</br>* Dental office "locations" and "counts" are as per ND Department of Health, October, 2019.
+</br>
+</br>
+</br>Updated on December 8, 2019.
+
+-----------------------------------------------------------------------
+
+School-Based Dental Sealant Program
+=====================================
+Column {data-width=650}
+-----------------------------------------------------------------------
+
+### North Dakota School-Based Dental Sealant Program
+
+```{r}
+
+
+library(htmltools)
+library(ggmap)
+library(leaflet)
+
+pal<- colorNumeric(palette = c("#087482", "#796e66", "#faa21b", "#d34727", "#a8353a"), domain = cnty@data$POP2010, na.color="transparent")
+
+pal2<-colorFactor(palette =c(blk, turq, org, byell, "white"), domain=levels(allschools$Provider.Type))
+
+
+cntyna <- c("Burke"	, "Billings"	,"Bowman"	,"Ward"	,"Rolette"	,"Mountrail"	,"Richland"	,"Towner"	,
+            "Ramsey"	,"Stutsman"	,"Oliver"	,"Sioux"	,"Adams"	,"Steele"	,"Barnes"	,"Hettinger"	,
+            "Ransom"	,"Pembina"	,"Dickey"	,"Wells"	,"Benson"	,"Grand Forks"	,"McIntosh"	,
+            "Logan"	,"Renville"	,"Pierce"	,"Foster"	,"Grant"	,"Golden Valley"	,"Divide"	,"Stark"	,
+            "Nelson"	,"Sargent"	,"LaMoure"	,"Bottineau"	,"Cavalier"	,"Sheridan"	,"McHenry"	,
+            "Traill"	,"Eddy"	,"Emmons"	,"Dunn"	,"Walsh"	,"Kidder"	,"Cass"	,"Mercer"	,"McLean"	,
+            "McKenzie"	,"Burleigh"	,"Morton"	,"Slope"	,"Williams"	,"Griggs"	)
+cnty@data<-cbind(cntyna, cnty@data)
+
+
+mytext<-paste(
+ "<b>", "County Name: ","</b>", cnty@data$cntyna,"<br/>",
+ "<b>","Population: ", "</b>", round(cnty@data$POP2010, 2), 
+  sep = "") %>% 
+  lapply(htmltools::HTML)
+
+leaflet(cnty) %>%
+  setView(lng= -100.400, lat=47.6715, zoom=7.5) %>% 
+  addPolygons(data=cnty, 
+              fillColor = "grey",
+               weight=0.9,
+               smoothFactor = 1, 
+               color="grey",
+               fillOpacity = 0.5,
+              highlightOptions = highlightOptions(color = turq, weight = 3.5, opacity = .6,
+                 bringToFront = F), 
+               label = mytext,
+               labelOptions = labelOptions( 
+                 style = list("font-weight" = "normal", padding = "3px 8px"), 
+                 textsize = "13px", 
+                 direction = "auto" )) %>%
+  addProviderTiles(providers$CartoDB.Positron) %>%
+          
+  addCircleMarkers(
+    radius=8.5,
+    weight=.9,
+    fillOpacity = .42,
+    lng = allschools$lon,
+    lat = allschools$lat,
+    color= ~pal2(allschools$Provider.Type),
+    label= lapply(paste("<b>","School Name: ", "</b>", allschools$Name.of.School , "<br>" ,
+                   "<b>","Provider: ","</b>", allschools$Provider.Type, "<br>"), HTML)  , 
+
+ group="School Locations") %>% 
+  addLegend("topright", 
+            pal = pal2,
+            values=allschools$Provider.Type,
+            labels = ~pal2, 
+            title="North Dakota Schools Enrolled in Dental Sealant Programs by Provider Type",
+            group="Legend",
+            opacity = .5) 
+
+```
+
+Column {data-width=150}
+-----------------------------------------------------------------------
+
+### County Population
+
+```{r}
+DT::datatable(cnty@data[, c("cntyna", "cntschl", "POP2010", "POP10_S")],
+  rownames = FALSE, colnames=c("County","Schools Enrolled in Dental Sealant Program Per County", "Population", "Population per Sq. mi." ), options = list(pageLength = 53)
+)
+```
+
+
+### Notes
+
+```{r}
+ "School Locations and Dental Sealant Program Providers in North Dakota"
+
+```
+
+<b>How to Use:</b> 
+</br>
+</br>
+* Click the "circle" icon to display more information about the school and the type of dental sealant program provider at that school location. 
+</br>
+</br>* Zoom in and out using "+" or "-" at the top left of map, or pressing and holding the "CNTRL" key and scrolling the wheel on your mouse up or down.
+</br>
+</br><b>Data Sources:</b> 
+</br>
+</br>* Population counts are per U.S. Census, 2010.
+</br>
+</br>* Dental office "locations" and "counts" are as per ND Department of Health, October, 2019.
+</br>
+</br>
+</br>Updated on December 6, 2019.
+

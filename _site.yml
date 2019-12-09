@@ -8,6 +8,8 @@ navbar:
         href: projects.hmtl
       - text: "About"
         href: about.html
+      - text: "Oral Health Project"
+        href: ohproject.html
     right:
       - text: "Contact"
         href: contact.hmtl
